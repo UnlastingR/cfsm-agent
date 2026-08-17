@@ -90,12 +90,12 @@ func checkLatestUpdate(ctx context.Context, currentVersion string, usePublicDNS 
 		return updateCandidate{}, false, err
 	}
 	assetName := expectedUpdateAssetName(runtime.GOOS, runtime.GOARCH)
-	releases, err := listGitHubReleases(ctx, owner, name, usePublicDNS)
-	if err != nil {
-		return updateCandidate{}, false, err
-	}
 
 	if strings.HasPrefix(currentVersion, snapshotVersionPrefix) {
+		releases, err := listGitHubReleases(ctx, owner, name, usePublicDNS)
+		if err != nil {
+			return updateCandidate{}, false, err
+		}
 		candidate, ok := selectLatestSnapshotRelease(releases, assetName)
 		if !ok || candidate.TagName == currentVersion {
 			return updateCandidate{}, false, nil
@@ -107,11 +107,45 @@ func checkLatestUpdate(ctx context.Context, currentVersion string, usePublicDNS 
 	if err != nil {
 		return updateCandidate{}, false, fmt.Errorf("parse current version %q: %w", currentVersion, err)
 	}
-	candidate, ok := selectLatestStableRelease(releases, assetName, current)
+	latestRelease, err := getLatestGitHubRelease(ctx, owner, name, usePublicDNS)
+	if err != nil {
+		return updateCandidate{}, false, err
+	}
+	candidate, ok := selectLatestStableRelease([]githubRelease{latestRelease}, assetName, current)
 	if !ok {
 		return updateCandidate{}, false, nil
 	}
 	return candidate, true, nil
+}
+
+// getLatestGitHubRelease is used for stable updates. GitHub exposes the latest
+// stable release directly, which avoids relying on the releases collection
+// endpoint. The collection endpoint remains necessary for Snapshot builds because
+// prereleases must be compared by publication time.
+func getLatestGitHubRelease(ctx context.Context, owner, repo string, usePublicDNS bool) (githubRelease, error) {
+	client := newUpdateHTTPClient(30*time.Second, usePublicDNS)
+	endpoint := fmt.Sprintf("%s/repos/%s/%s/releases/latest",
+		githubAPIBaseURL, url.PathEscape(owner), url.PathEscape(repo))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return githubRelease{}, err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", "cfsm-agent")
+	resp, err := client.Do(req)
+	if err != nil {
+		return githubRelease{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return githubRelease{}, fmt.Errorf("GitHub latest release API returned http %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+	var release githubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return githubRelease{}, err
+	}
+	return release, nil
 }
 
 // listGitHubReleases 不走 UPDATE_PROXY：gh-proxy 类服务只代理 github.com 的
