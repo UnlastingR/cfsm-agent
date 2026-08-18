@@ -123,6 +123,7 @@ func readConfig(path string) (Config, error) {
 	cfg.ConnectionMode, _ = normalizeConnectionMode(values["CONNECTION_MODE"])
 	cfg.AutoUpdate = values["AUTO_UPDATE"] == "1"
 	cfg.UpdateProxy = strings.TrimSpace(values["UPDATE_PROXY"])
+	cfg.UserBackground = values["USER_BACKGROUND"] == "1"
 	cfg.ConfigMD5 = values["CONFIG_MD5"]
 	if cfg.ConfigMD5 == "" {
 		cfg.ConfigMD5 = "none"
@@ -158,6 +159,11 @@ func writeConfig(path string, cfg Config) error {
 		writeKV("AUTO_UPDATE", "0")
 	}
 	writeKV("UPDATE_PROXY", cfg.UpdateProxy)
+	if cfg.UserBackground {
+		writeKV("USER_BACKGROUND", "1")
+	} else {
+		writeKV("USER_BACKGROUND", "0")
+	}
 	if cfg.ConfigMD5 == "" {
 		cfg.ConfigMD5 = "none"
 	}

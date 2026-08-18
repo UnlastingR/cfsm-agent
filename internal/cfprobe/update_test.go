@@ -106,7 +106,7 @@ func TestUpdateAssetDownloadURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("updateAssetDownloadURL() error = %v", err)
 	}
-	want := "https://github.com/huilang-me/cfsm-agent/releases/download/v1.2.3/cf-probe-linux-amd64"
+	want := "https://github.com/UnlastingR/cfsm-agent/releases/download/v1.2.3/cf-probe-linux-amd64"
 	if got != want {
 		t.Fatalf("asset url = %q, want %q", got, want)
 	}
@@ -117,7 +117,7 @@ func TestUpdateAssetDownloadURLAppliesProxy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("updateAssetDownloadURL() error = %v", err)
 	}
-	want := "https://gh-proxy.example.com/https://github.com/huilang-me/cfsm-agent/releases/download/v1.2.3/cf-probe-linux-amd64"
+	want := "https://gh-proxy.example.com/https://github.com/UnlastingR/cfsm-agent/releases/download/v1.2.3/cf-probe-linux-amd64"
 	if got != want {
 		t.Fatalf("proxied asset url = %q, want %q", got, want)
 	}

@@ -3,6 +3,7 @@ package cfprobe
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -23,6 +24,7 @@ func TestMergeExplicitInstallConfig(t *testing.T) {
 		ConnectionMode: connectionModeHTTP,
 		AutoUpdate:     true,
 		UpdateProxy:    "https://gh-proxy.example.com",
+		UserBackground: true,
 	}
 
 	merged := existing
@@ -50,6 +52,12 @@ func TestMergeExplicitInstallConfig(t *testing.T) {
 	mergeExplicitInstallConfig(&merged, flagConfig, map[string]bool{"install_ghproxy": true})
 	if merged.UpdateProxy != flagConfig.UpdateProxy {
 		t.Fatalf("UpdateProxy = %q, want %q", merged.UpdateProxy, flagConfig.UpdateProxy)
+	}
+
+	merged = existing
+	mergeExplicitInstallConfig(&merged, flagConfig, map[string]bool{"user_background": true})
+	if !merged.UserBackground {
+		t.Fatal("UserBackground = false, want true when -user_background=1 is explicit")
 	}
 
 	existingAuto := existing
@@ -167,6 +175,19 @@ func TestManagementLogFileByServiceSystem(t *testing.T) {
 				t.Fatalf("managementLogFile() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestServiceSystemUsesExplicitUserBackgroundMode(t *testing.T) {
+	paths := Paths{UserMode: true, UserBackground: true}
+	if runtime.GOOS == "darwin" {
+		if got := serviceSystem(paths); got != "launchd" {
+			t.Fatalf("serviceSystem() = %q, want launchd", got)
+		}
+		return
+	}
+	if got := serviceSystem(paths); got != "background" {
+		t.Fatalf("serviceSystem() = %q, want background", got)
 	}
 }
 

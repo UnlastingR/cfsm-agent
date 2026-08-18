@@ -77,6 +77,22 @@ func TestParseInstallOptionsInstallProxy(t *testing.T) {
 	}
 }
 
+func TestParseInstallOptionsUserBackground(t *testing.T) {
+	got, err := parseInstallOptions([]string{"--user-background=1"})
+	if err != nil {
+		t.Fatalf("parseInstallOptions(--user-background=1) error = %v", err)
+	}
+	if !got.UserBackground {
+		t.Fatal("UserBackground = false, want true")
+	}
+	if !got.Explicit["user_background"] {
+		t.Fatal("Explicit[user_background] = false, want true")
+	}
+	if _, err := parseInstallOptions([]string{"-user_background=bad"}); err == nil {
+		t.Fatal("parseInstallOptions(-user_background=bad) expected error")
+	}
+}
+
 func TestParseInstallOptionsConnectionMode(t *testing.T) {
 	got, err := parseInstallOptions([]string{"-connection_mode=http"})
 	if err != nil {
@@ -100,11 +116,11 @@ func TestParseInstallOptionsConnectionMode(t *testing.T) {
 }
 
 func TestParseInstallOptionsTracksExplicitFlags(t *testing.T) {
-	got, err := parseInstallOptions([]string{"-auto_update=1", "--auto-update=1", "-collect=5", "-connection_mode=http", "--install-ghproxy=https://gh-proxy.example.com"})
+	got, err := parseInstallOptions([]string{"-auto_update=1", "--auto-update=1", "-collect=5", "-connection_mode=http", "--install-ghproxy=https://gh-proxy.example.com", "--user-background=1"})
 	if err != nil {
 		t.Fatalf("parseInstallOptions() error = %v", err)
 	}
-	for _, name := range []string{"auto_update", "collect_interval", "connection_mode", "install_ghproxy"} {
+	for _, name := range []string{"auto_update", "collect_interval", "connection_mode", "install_ghproxy", "user_background"} {
 		if !got.Explicit[name] {
 			t.Fatalf("Explicit[%q] = false, want true (all: %v)", name, got.Explicit)
 		}

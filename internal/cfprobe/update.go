@@ -20,7 +20,7 @@ import (
 const (
 	autoUpdateCheckInterval = 6 * time.Hour
 	autoUpdateLockTTL       = 30 * time.Minute
-	defaultUpdateRepo       = "huilang-me/cfsm-agent"
+	defaultUpdateRepo       = "UnlastingR/cfsm-agent"
 	githubAPIBaseURL        = "https://api.github.com"
 	snapshotVersionPrefix   = "Snapshot-"
 )
@@ -292,6 +292,9 @@ func scheduleUpdateInstall(paths Paths, binPath string, now int64) (string, erro
 		return scheduleWindowsUpdateInstall(binPath)
 	}
 	if paths.UserMode {
+		if paths.UserBackground {
+			return scheduleUserBackgroundUpdateInstall(paths, binPath)
+		}
 		return scheduleUserModeUpdateInstall(paths, binPath)
 	}
 	return scheduleUnixUpdateInstall(paths.ServiceName, paths.LogFile, binPath, now)
@@ -420,6 +423,20 @@ func scheduleUserModeUpdateInstall(paths Paths, binPath string) (string, error) 
 		os.Exit(42)
 	})
 	return "self-replace", nil
+}
+
+func scheduleUserBackgroundUpdateInstall(paths Paths, binPath string) (string, error) {
+	if paths.LogFile == "" {
+		return "", errors.New("background log path is empty")
+	}
+	cmdLine := fmt.Sprintf("sleep %d; %s install; rc=$?; rm -f %s; exit $rc",
+		int(autoUpdateDelay.Seconds()), quoteShell(binPath), quoteShell(binPath))
+	nohupCmd := "nohup /bin/sh -c " + quoteShell(cmdLine) + " >>" + quoteShell(paths.LogFile) + " 2>&1 &"
+	cmd := exec.Command("sh", "-c", nohupCmd)
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	return "nohup-user-background", nil
 }
 
 func updateAssetDownloadURL(tag, assetName, proxy string) (string, error) {

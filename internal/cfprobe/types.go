@@ -28,8 +28,9 @@ type Config struct {
 	ConnectionMode  string
 	AutoUpdate      bool
 	UpdateProxy     string
+	UserBackground  bool
 	// ConfigMD5 mirrors the worker dynamic config version; local fields like
-	// AutoUpdate and UpdateProxy are intentionally outside that comparison.
+	// AutoUpdate, UpdateProxy and UserBackground are intentionally outside that comparison.
 	ConfigMD5 string
 }
 
@@ -48,6 +49,7 @@ type Paths struct {
 	LaunchdUserFile string
 	LaunchdRootFile string
 	UserMode        bool
+	UserBackground  bool
 	RunUser         string
 	RunUID          int
 	HomeDir         string

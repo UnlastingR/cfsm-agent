@@ -52,7 +52,7 @@ func parseInstallOptions(args []string) (InstallOptions, error) {
 	fs := flag.NewFlagSet("install", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
-	var autoUpdate, debug string
+	var autoUpdate, debug, userBackground string
 	var ignoredInstallVersion string
 	fs.StringVar(&opts.ServerID, "id", "", "")
 	fs.StringVar(&opts.Secret, "secret", "", "")
@@ -76,6 +76,8 @@ func parseInstallOptions(args []string) (InstallOptions, error) {
 	fs.StringVar(&opts.TXCorrectionGB, "tx_correction", "", "")
 	fs.StringVar(&debug, "debug", "", "")
 	fs.StringVar(&opts.UpdateProxy, "install-ghproxy", "", "")
+	fs.StringVar(&userBackground, "user_background", "", "")
+	fs.StringVar(&userBackground, "user-background", "", "")
 	fs.StringVar(&ignoredInstallVersion, "install-version", "", "")
 	fs.BoolVar(&opts.NoStart, "no_start", false, "")
 	fs.BoolVar(&opts.NoStart, "no-start", false, "")
@@ -92,6 +94,10 @@ func parseInstallOptions(args []string) (InstallOptions, error) {
 	opts.AutoUpdate, err = normalizeBinaryValue(autoUpdate, false)
 	if err != nil {
 		return opts, fmt.Errorf("auto_update 参数非法: %w", err)
+	}
+	opts.UserBackground, err = normalizeBinaryValue(userBackground, false)
+	if err != nil {
+		return opts, fmt.Errorf("user_background 参数非法: %w", err)
 	}
 	opts.Debug, err = normalizeBinaryValue(debug, false)
 	if err != nil {

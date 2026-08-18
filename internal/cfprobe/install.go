@@ -12,6 +12,19 @@ import (
 func Install(opts InstallOptions, version string) error {
 	paths := defaultPaths()
 	printBanner(version)
+	existing, existingPath, existingErr := readInstallConfig(paths)
+	usingExistingConfig := existingErr == nil
+	if usingExistingConfig {
+		fmt.Printf("[INFO] Config source: %s\n", existingPath)
+		fmt.Printf("[INFO] 检测到已有配置，沿用 %s\n", paths.ConfigFile)
+		flagConfig := opts.Config
+		opts.Config = existing
+		mergeExplicitInstallConfig(&opts.Config, flagConfig, opts.Explicit)
+	} else if opts.ServerID == "" || opts.Secret == "" || opts.WorkerURL == "" {
+		printUsage(os.Stderr)
+		return errors.New("运行所需的 -id/-secret/-url 参数不完整")
+	}
+	paths.UserBackground = opts.UserBackground
 	if err := requireInstallPermission(paths); err != nil {
 		return err
 	}
@@ -32,19 +45,6 @@ func Install(opts InstallOptions, version string) error {
 			}
 		}
 	}
-
-	existing, existingPath, existingErr := readInstallConfig(paths)
-	usingExistingConfig := existingErr == nil
-	if usingExistingConfig {
-		fmt.Printf("[INFO] Config source: %s\n", existingPath)
-		fmt.Printf("[INFO] 检测到已有配置，沿用 %s\n", paths.ConfigFile)
-		flagConfig := opts.Config
-		opts.Config = existing
-		mergeExplicitInstallConfig(&opts.Config, flagConfig, opts.Explicit)
-	} else if opts.ServerID == "" || opts.Secret == "" || opts.WorkerURL == "" {
-		printUsage(os.Stderr)
-		return errors.New("运行所需的 -id/-secret/-url 参数不完整")
-	}
 	if !usingExistingConfig || opts.ConfigMD5 == "" {
 		opts.ConfigMD5 = "none"
 	}
@@ -52,7 +52,11 @@ func Install(opts InstallOptions, version string) error {
 
 	fmt.Printf("[INFO] Platform: %s/%s (%s)\n", runtime.GOOS, runtime.GOARCH, platformName())
 	if paths.UserMode {
-		fmt.Printf("[INFO] Install mode: user (%s)\n", firstNonEmpty(paths.RunUser, "current"))
+		if paths.UserBackground {
+			fmt.Printf("[INFO] Install mode: user-background (%s)\n", firstNonEmpty(paths.RunUser, "current"))
+		} else {
+			fmt.Printf("[INFO] Install mode: user (%s)\n", firstNonEmpty(paths.RunUser, "current"))
+		}
 	} else {
 		fmt.Println("[INFO] Install mode: system")
 	}
@@ -124,12 +128,17 @@ func mergeExplicitInstallConfig(dst *Config, src Config, explicit map[string]boo
 			dst.AutoUpdate = src.AutoUpdate
 		case "install_ghproxy":
 			dst.UpdateProxy = src.UpdateProxy
+		case "user_background":
+			dst.UserBackground = src.UserBackground
 		}
 	}
 }
 
 func Uninstall(version string) error {
 	paths := defaultPaths()
+	if cfg, err := readConfig(paths.ConfigFile); err == nil {
+		paths.UserBackground = cfg.UserBackground
+	}
 	printBanner(version)
 	if err := requireUninstallPermission(paths); err != nil {
 		return err
@@ -311,6 +320,9 @@ func serviceSystem(paths Paths) string {
 	if paths.UserMode {
 		if runtime.GOOS == "darwin" {
 			return "launchd"
+		}
+		if paths.UserBackground {
+			return "background"
 		}
 		return "systemd-user"
 	}

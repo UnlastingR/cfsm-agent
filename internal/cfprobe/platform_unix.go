@@ -325,6 +325,12 @@ func requireInstallPermission(paths Paths) error {
 			}
 			return nil
 		}
+		if paths.UserBackground {
+			if runtime.GOOS != "linux" {
+				return errors.New("user_background 当前仅支持 Linux 普通用户模式")
+			}
+			return nil
+		}
 		if platform := nonRootSystemServicePlatform(); platform != "" {
 			return fmt.Errorf("%s 当前仅支持 root/system 服务安装，请使用 root 权限重新执行安装命令", platform)
 		}

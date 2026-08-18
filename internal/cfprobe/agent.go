@@ -143,6 +143,7 @@ func Run(configFile string, debug bool, version string) error {
 	if cfg.ServerID == "" || cfg.Secret == "" || cfg.WorkerURL == "" {
 		return errors.New("配置缺失: SERVER_ID/SECRET/WORKER_URL 不能为空")
 	}
+	paths.UserBackground = cfg.UserBackground
 	normalizeConfigIntervals(&cfg)
 
 	ctx, stop := signal.NotifyContext(context.Background(), shutdownSignals()...)

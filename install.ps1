@@ -1,6 +1,6 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
-$Repo = "huilang-me/cfsm-agent"
+$Repo = "UnlastingR/cfsm-agent"
 $GitHubProxy = ""
 $InstallVersion = "latest"
 

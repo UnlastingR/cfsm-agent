@@ -39,6 +39,7 @@ func TestConfigPersistsUpdateProxy(t *testing.T) {
 	cfg.WorkerURL = "https://worker.example.com/report"
 	cfg.AutoUpdate = true
 	cfg.UpdateProxy = "https://gh-proxy.example.com"
+	cfg.UserBackground = true
 	cfg.ConnectionMode = connectionModeHTTP
 
 	if err := writeConfig(path, cfg); err != nil {
@@ -53,6 +54,9 @@ func TestConfigPersistsUpdateProxy(t *testing.T) {
 	}
 	if !got.AutoUpdate {
 		t.Fatal("AutoUpdate = false, want true")
+	}
+	if !got.UserBackground {
+		t.Fatal("UserBackground = false, want true")
 	}
 	if got.ConnectionMode != connectionModeHTTP {
 		t.Fatalf("ConnectionMode = %q, want %q", got.ConnectionMode, connectionModeHTTP)
